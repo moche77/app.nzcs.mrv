@@ -14,6 +14,7 @@ import 'audit_controls_screen.dart';
 import 'change_password_screen.dart';
 import 'login_screen.dart';
 import 'reports_screen.dart';
+import 'user_management_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -99,8 +100,36 @@ class _HomeShellState extends State<HomeShell> {
                 MaterialPageRoute(builder: (_) => const ReportsScreen()),
               ),
             ),
+          if (user.hasPermission(Permission.manageUsers))
+            IconButton(
+              tooltip: 'User Management',
+              icon: const Icon(Icons.group_outlined),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const UserManagementScreen()),
+              ),
+            ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.account_circle_outlined),
+            icon: Stack(
+              alignment: Alignment.center,
+              children: [
+                const Icon(Icons.account_circle_outlined),
+                if (user.role.isOwner)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFD700),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             onSelected: (v) async {
               if (v == 'logout') {
                 await context.read<AuthService>().logout();
@@ -116,6 +145,12 @@ class _HomeShellState extends State<HomeShell> {
                     builder: (_) => const ChangePasswordScreen(),
                   ),
                 );
+              } else if (v == 'users') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const UserManagementScreen()),
+                );
               } else if (v == 'help') {
                 _showHelp(context);
               }
@@ -126,18 +161,62 @@ class _HomeShellState extends State<HomeShell> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(user.fullName,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textPrimary)),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(user.fullName,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.textPrimary)),
+                        ),
+                        if (user.role.isOwner) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFD700)
+                                  .withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: const Text('OWNER',
+                                style: TextStyle(
+                                    fontSize: 8.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF8B6914))),
+                          ),
+                        ],
+                      ],
+                    ),
                     Text('@${user.username}',
                         style: const TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.textSecondary)),
+                            fontSize: 12, color: AppTheme.textSecondary)),
+                    Text(user.role.label,
+                        style: const TextStyle(
+                            fontSize: 11, color: AppTheme.primaryGreen)),
+                    if (user.hasActivePrintGrant)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 2),
+                        child: Text('Print authorization active',
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: Color(0xFFEF6C00),
+                                fontStyle: FontStyle.italic)),
+                      ),
                   ],
                 ),
               ),
               const PopupMenuDivider(),
+              if (user.hasPermission(Permission.manageUsers))
+                const PopupMenuItem(
+                  value: 'users',
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.group_outlined),
+                    title: Text('User Management'),
+                  ),
+                ),
               const PopupMenuItem(
                 value: 'pwd',
                 child: ListTile(

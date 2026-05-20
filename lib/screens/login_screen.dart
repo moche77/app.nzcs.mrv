@@ -306,7 +306,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             const Divider(),
                             const SizedBox(height: 8),
                             const Text(
-                              'Demo Credentials (forced reset on first login)',
+                              'Initial Credentials (forced reset on first login)',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
@@ -315,11 +315,23 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 6),
                             const Text(
-                              'admin / admin123\nreceiving · pyrolysis · lab · inventory · field · compliance / password123',
+                              'Owner: manuel / ChangeMe!2025\n'
+                              'Administrator: admin / admin123\n'
+                              'Department: receiving · pyrolysis · lab · inventory · field · compliance / password123',
                               style: TextStyle(
                                 fontSize: 11,
                                 color: AppTheme.textSecondary,
                                 height: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Access policy: Owner account is reserved; all other accounts require @netzerocarbon.solutions email.',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                color: AppTheme.textSecondary,
+                                fontStyle: FontStyle.italic,
+                                height: 1.4,
                               ),
                             ),
                           ],

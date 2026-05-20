@@ -26,6 +26,9 @@ dependencies:
   flutter_local_notifications: ^17.2.4
   timezone: ^0.9.4
   permission_handler: ^11.3.1
+  # Firebase (locked versions — see Firebase integration guide)
+  firebase_core: 3.6.0
+  cloud_firestore: 5.4.3
 
 dev_dependencies:
   flutter_test:

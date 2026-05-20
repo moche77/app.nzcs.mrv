@@ -28,6 +28,16 @@ class DataService extends ChangeNotifier {
   EmissionFactors _emissionFactors = EmissionFactors();
   EmissionFactors get emissionFactors => _emissionFactors;
 
+  /// Write-through callback for Firestore synchronization. Set by
+  /// FirebaseSyncService at boot; remains null when running offline only.
+  /// Signature: (module, id, payload) — module is one of feedstock, production,
+  /// quality, inventory, application, qa, audit.
+  Future<void> Function(String module, String id, Map<String, dynamic> data)?
+      onAfterSave;
+
+  /// Write-through callback for Firestore deletions.
+  Future<void> Function(String module, String id)? onAfterDelete;
+
   Future<void> initialize() async {
     _feedstock = await Hive.openBox(_feedstockBox);
     _production = await Hive.openBox(_productionBox);
@@ -62,11 +72,20 @@ class DataService extends ChangeNotifier {
   Future<void> saveFeedstock(FeedstockLog log) async {
     await _feedstock.put(log.id, log.toMap());
     notifyListeners();
+    await onAfterSave?.call('feedstock', log.id, log.toMap());
+  }
+
+  /// Local-only save (no Firestore echo) — used by FirebaseSyncService when
+  /// hydrating from remote snapshots to avoid sync loops.
+  Future<void> saveFeedstockLocal(FeedstockLog log) async {
+    await _feedstock.put(log.id, log.toMap());
+    notifyListeners();
   }
 
   Future<void> deleteFeedstock(String id) async {
     await _feedstock.delete(id);
     notifyListeners();
+    await onAfterDelete?.call('feedstock', id);
   }
 
   // ============ PRODUCTION ============
@@ -78,11 +97,18 @@ class DataService extends ChangeNotifier {
   Future<void> saveProduction(ProductionRun run) async {
     await _production.put(run.id, run.toMap());
     notifyListeners();
+    await onAfterSave?.call('production', run.id, run.toMap());
+  }
+
+  Future<void> saveProductionLocal(ProductionRun run) async {
+    await _production.put(run.id, run.toMap());
+    notifyListeners();
   }
 
   Future<void> deleteProduction(String id) async {
     await _production.delete(id);
     notifyListeners();
+    await onAfterDelete?.call('production', id);
   }
 
   // ============ QUALITY ============
@@ -94,11 +120,18 @@ class DataService extends ChangeNotifier {
   Future<void> saveQuality(QualityBatch q) async {
     await _quality.put(q.id, q.toMap());
     notifyListeners();
+    await onAfterSave?.call('quality', q.id, q.toMap());
+  }
+
+  Future<void> saveQualityLocal(QualityBatch q) async {
+    await _quality.put(q.id, q.toMap());
+    notifyListeners();
   }
 
   Future<void> deleteQuality(String id) async {
     await _quality.delete(id);
     notifyListeners();
+    await onAfterDelete?.call('quality', id);
   }
 
   // ============ INVENTORY ============
@@ -110,11 +143,18 @@ class DataService extends ChangeNotifier {
   Future<void> saveInventory(InventoryLot lot) async {
     await _inventory.put(lot.id, lot.toMap());
     notifyListeners();
+    await onAfterSave?.call('inventory', lot.id, lot.toMap());
+  }
+
+  Future<void> saveInventoryLocal(InventoryLot lot) async {
+    await _inventory.put(lot.id, lot.toMap());
+    notifyListeners();
   }
 
   Future<void> deleteInventory(String id) async {
     await _inventory.delete(id);
     notifyListeners();
+    await onAfterDelete?.call('inventory', id);
   }
 
   // ============ APPLICATION ============
@@ -127,11 +167,18 @@ class DataService extends ChangeNotifier {
   Future<void> saveApplication(ApplicationEvent e) async {
     await _application.put(e.id, e.toMap());
     notifyListeners();
+    await onAfterSave?.call('application', e.id, e.toMap());
+  }
+
+  Future<void> saveApplicationLocal(ApplicationEvent e) async {
+    await _application.put(e.id, e.toMap());
+    notifyListeners();
   }
 
   Future<void> deleteApplication(String id) async {
     await _application.delete(id);
     notifyListeners();
+    await onAfterDelete?.call('application', id);
   }
 
   // ============ GLOBAL QA ============
@@ -143,11 +190,18 @@ class DataService extends ChangeNotifier {
   Future<void> saveGlobalQA(GlobalQA q) async {
     await _qa.put(q.id, q.toMap());
     notifyListeners();
+    await onAfterSave?.call('qa', q.id, q.toMap());
+  }
+
+  Future<void> saveGlobalQALocal(GlobalQA q) async {
+    await _qa.put(q.id, q.toMap());
+    notifyListeners();
   }
 
   Future<void> deleteGlobalQA(String id) async {
     await _qa.delete(id);
     notifyListeners();
+    await onAfterDelete?.call('qa', id);
   }
 
   // ============ AUDIT CONTROLS ============
@@ -159,10 +213,17 @@ class DataService extends ChangeNotifier {
   Future<void> saveAuditControl(AuditControl c) async {
     await _audit.put(c.id, c.toMap());
     notifyListeners();
+    await onAfterSave?.call('audit', c.id, c.toMap());
+  }
+
+  Future<void> saveAuditControlLocal(AuditControl c) async {
+    await _audit.put(c.id, c.toMap());
+    notifyListeners();
   }
 
   Future<void> deleteAuditControl(String id) async {
     await _audit.delete(id);
     notifyListeners();
+    await onAfterDelete?.call('audit', id);
   }
 }

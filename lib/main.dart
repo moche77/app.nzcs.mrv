@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
+import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'services/auth_service.dart';
 import 'services/data_service.dart';
+import 'services/firebase_sync_service.dart';
 import 'services/id_generator_service.dart';
 import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
@@ -28,6 +31,15 @@ Future<void> main() async {
       // Hive failure is non-fatal — continue with in-memory fallback.
     }
 
+    // Firebase initialization is best-effort: if it fails (no network,
+    // misconfigured project, web platform without web app registered), the
+    // app continues in fully local mode using Hive only.
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } catch (_) {}
+
     final auth = AuthService();
     try {
       await auth.initialize();
@@ -36,6 +48,13 @@ Future<void> main() async {
     final data = DataService();
     try {
       await data.initialize();
+    } catch (_) {}
+
+    // Wire Firestore sync only after DataService is ready. Hooks set here
+    // make every subsequent saveXxx() also propagate to the cloud project.
+    final sync = FirebaseSyncService(data);
+    try {
+      await sync.initialize();
     } catch (_) {}
 
     final idGenerator = IdGeneratorService();

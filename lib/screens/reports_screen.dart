@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:csv/csv.dart';
+import '../models/user_role.dart';
 import '../services/auth_service.dart';
 import '../services/data_service.dart';
 import '../services/calculation_engine.dart';
@@ -117,11 +118,23 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Widget _pdfReportCard(
       BuildContext context, CalculationEngine engine, DataService data) {
+    final auth = context.watch<AuthService>();
+    final user = auth.currentUser;
+    final canPrint = auth.canPrintReports;
+    final isOwner = user?.role.isOwner ?? false;
+    final hasDelegatedGrant =
+        (user?.hasActivePrintGrant ?? false) && !isOwner;
+
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppTheme.primaryGreen, width: 1.5),
+        side: BorderSide(
+          color: canPrint
+              ? AppTheme.primaryGreen
+              : AppTheme.textSecondary.withValues(alpha: 0.4),
+          width: 1.5,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -133,11 +146,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                    color: (canPrint
+                            ? AppTheme.primaryGreen
+                            : AppTheme.textSecondary)
+                        .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.picture_as_pdf_outlined,
-                      color: AppTheme.primaryGreen, size: 24),
+                  child: Icon(Icons.picture_as_pdf_outlined,
+                      color: canPrint
+                          ? AppTheme.primaryGreen
+                          : AppTheme.textSecondary,
+                      size: 24),
                 ),
                 const SizedBox(width: 12),
                 const Expanded(
@@ -154,13 +173,101 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ],
                   ),
                 ),
+                if (isOwner)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFD700).withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text('OWNER',
+                        style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF8B6914))),
+                  )
+                else if (hasDelegatedGrant)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEF6C00).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text('AUTHORIZED',
+                        style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFFEF6C00))),
+                  ),
               ],
             ),
+            if (hasDelegatedGrant && user?.printAuthorizedUntil != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF6C00).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                      color:
+                          const Color(0xFFEF6C00).withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.access_time,
+                        size: 16, color: Color(0xFFEF6C00)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Print authorization active until '
+                        '${_fmtAuthDate(user!.printAuthorizedUntil!)} '
+                        '(granted by @${user.printAuthorizedBy ?? '—'})',
+                        style: const TextStyle(
+                            fontSize: 11, color: Color(0xFFEF6C00)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            if (!canPrint) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.dangerRed.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                      color: AppTheme.dangerRed.withValues(alpha: 0.3)),
+                ),
+                child: const Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.lock_outline,
+                        size: 16, color: AppTheme.dangerRed),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Final-report printing is restricted to the Owner. '
+                        'Request a time-boxed print authorization from '
+                        'manuel@titantradersltd.com to generate this report.',
+                        style: TextStyle(
+                            fontSize: 11.5,
+                            color: AppTheme.dangerRed,
+                            height: 1.4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 14),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: _generatingPdf
+                onPressed: (!canPrint || _generatingPdf)
                     ? null
                     : () => _generatePdf(context, engine, data),
                 icon: _generatingPdf
@@ -170,10 +277,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white),
                       )
-                    : const Icon(Icons.download_outlined),
+                    : Icon(canPrint
+                        ? Icons.download_outlined
+                        : Icons.lock_outline),
                 label: Text(_generatingPdf
                     ? 'GENERATING...'
-                    : 'GENERATE & PRINT PDF REPORT'),
+                    : canPrint
+                        ? 'GENERATE & PRINT PDF REPORT'
+                        : 'PRINT REQUIRES OWNER AUTHORIZATION'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
@@ -185,14 +296,36 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
+  String _fmtAuthDate(DateTime d) {
+    final mm = d.month.toString().padLeft(2, '0');
+    final dd = d.day.toString().padLeft(2, '0');
+    final hh = d.hour.toString().padLeft(2, '0');
+    final min = d.minute.toString().padLeft(2, '0');
+    return '${d.year}-$mm-$dd $hh:$min';
+  }
+
   Future<void> _generatePdf(BuildContext context, CalculationEngine engine,
       DataService data) async {
+    final auth = context.read<AuthService>();
+    // Defense-in-depth: enforce permission at action site even if UI was bypassed.
+    if (!auth.canPrintReports) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Print blocked: Owner authorization required. Contact manuel@titantradersltd.com.'),
+          backgroundColor: AppTheme.dangerRed,
+        ),
+      );
+      return;
+    }
     setState(() => _generatingPdf = true);
     try {
-      final auth = context.read<AuthService>();
-      final userLabel = auth.currentUser != null
-          ? '${auth.currentUser!.fullName} (${auth.currentUser!.username})'
-          : 'unknown';
+      final user = auth.currentUser!;
+      final printContext = user.role.isOwner
+          ? 'Owner'
+          : 'Authorized by @${user.printAuthorizedBy ?? "owner"}';
+      final userLabel =
+          '${user.fullName} (${user.username}) — $printContext';
       await PdfReportService.printReport(
         engine: engine,
         feedstock: data.getFeedstockLogs(),

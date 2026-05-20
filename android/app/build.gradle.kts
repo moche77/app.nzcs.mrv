@@ -7,6 +7,8 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    // Google Services plugin for Firebase integration.
+    id("com.google.gms.google-services")
 }
 
 val keystoreProperties = Properties()
@@ -16,7 +18,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.carbonaudit.audit"
+    namespace = "app.nzcsmrv.mobile"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -31,7 +33,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.carbonaudit.audit"
+        applicationId = "app.nzcsmrv.mobile"
         // Raised to 23 (Android 6.0) — required by flutter_local_notifications
         // and aligns with runtime-permission model expected by the app.
         minSdk = flutter.minSdkVersion
