@@ -1,0 +1,40 @@
+name: nerzero_mrv
+description: "NerZero MRV - VM0044 Audit-Grade Carbon Monitoring & Data Entry Application"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  provider: 6.1.5+1
+  hive: 2.2.3
+  hive_flutter: 1.1.0
+  shared_preferences: 2.5.3
+  intl: ^0.19.0
+  uuid: ^4.5.1
+  fl_chart: ^0.69.0
+  crypto: ^3.0.5
+  path_provider: ^2.1.5
+  csv: ^6.0.0
+  pdf: ^3.11.1
+  printing: ^5.13.4
+  share_plus: ^10.1.2
+  flutter_local_notifications: ^17.2.4
+  timezone: ^0.9.4
+  permission_handler: ^11.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.13
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icons/
